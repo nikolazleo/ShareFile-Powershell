@@ -17,18 +17,32 @@
 .PARAMETER TempDirectory
     The directory where temporary CSV files will be stored. Defaults to "C:\tmp\".
 
+.PARAMETER UserTypes
+    Specifies which user types to process. Valid values are 'Employee', 'Client', or 'Both'.
+    Defaults to 'Both' to process all user types.
+
 .PARAMETER WhatIf
     Shows what would be deleted without actually performing the deletion.
 
 .EXAMPLE
     Remove-DisabledShareFileUsers -AdminUserId "admin@company.com"
     
-    Finds and removes all disabled users, transferring items to admin@company.com
+    Finds and removes all disabled users (both employees and clients), transferring items to admin@company.com
 
 .EXAMPLE
-    Remove-DisabledShareFileUsers -AdminUserId "admin123" -ClientConfigPath "d:\config\sf.sfps" -WhatIf
+    Remove-DisabledShareFileUsers -AdminUserId "admin@company.com" -UserTypes Employee
     
-    Shows what would be deleted without actually performing the operation
+    Finds and removes only disabled employee users, transferring items to admin@company.com
+
+.EXAMPLE
+    Remove-DisabledShareFileUsers -AdminUserId "admin@company.com" -UserTypes Client
+    
+    Finds and removes only disabled client users, transferring items to admin@company.com
+
+.EXAMPLE
+    Remove-DisabledShareFileUsers -AdminUserId "admin123" -ClientConfigPath "d:\config\sf.sfps" -UserTypes Both -WhatIf
+    
+    Shows what would be deleted for both user types without actually performing the operation
 
 .NOTES
     Requires the ShareFile PowerShell snapin to be installed and available.
@@ -47,7 +61,11 @@ param(
 
     [Parameter()]
     [ValidateNotNullOrEmpty()]
-    [string]$TempDirectory = "C:\tmp\"
+    [string]$TempDirectory = "C:\tmp\",
+
+    [Parameter()]
+    [ValidateSet('Employee', 'Client', 'Both')]
+    [string]$UserTypes = 'Both'
 )
 
 # Add ShareFile PowerShell snapin
@@ -287,11 +305,19 @@ try {
     
     Write-Host "Using admin user ID: $resolvedAdminUserId" -ForegroundColor Green
 
-    # Find disabled users for both employee and client types
-    $allDisabledUsers = @()
-    $userTypes = @('employee', 'client')
+    # Determine which user types to process based on parameter
+    $userTypesToProcess = switch ($UserTypes) {
+        'Employee' { @('employee') }
+        'Client' { @('client') }
+        'Both' { @('employee', 'client') }
+    }
     
-    foreach ($userType in $userTypes) {
+    Write-Host "Processing user types: $($userTypesToProcess -join ', ')" -ForegroundColor Cyan
+
+    # Find disabled users for specified types
+    $allDisabledUsers = @()
+    
+    foreach ($userType in $userTypesToProcess) {
         $csvPath = Join-Path -Path $TempDirectory -ChildPath "$userType.csv"
         Write-Host "Searching for disabled $userType users..." -ForegroundColor Yellow
         
@@ -308,8 +334,8 @@ try {
     if ($allDisabledUsers.Count -gt 0) {
         Write-Host "Users will be deleted and their items/groups transferred to: $resolvedAdminUserId" -ForegroundColor Yellow
         
-        # Delete users from both CSV files
-        foreach ($userType in $userTypes) {
+        # Delete users from CSV files for selected user types
+        foreach ($userType in $userTypesToProcess) {
             $csvPath = Join-Path -Path $TempDirectory -ChildPath "$userType.csv"
             if (Test-Path -Path $csvPath) {
                 Write-Host "`nProcessing $userType users for deletion..." -ForegroundColor Yellow

@@ -126,6 +126,19 @@ This script combines user discovery and deletion in a single, safe operation.
 .\Remove-DisabledShareFileUsers.ps1 -AdminUserId "admin@company.com" -WhatIf
 ```
 
+#### Target Specific User Types
+
+```powershell
+# Process only disabled employee users
+.\Remove-DisabledShareFileUsers.ps1 -AdminUserId "admin@company.com" -UserTypes Employee
+
+# Process only disabled client users
+.\Remove-DisabledShareFileUsers.ps1 -AdminUserId "admin@company.com" -UserTypes Client
+
+# Process both user types (default behavior)
+.\Remove-DisabledShareFileUsers.ps1 -AdminUserId "admin@company.com" -UserTypes Both
+```
+
 #### Custom Configuration
 
 ```powershell
@@ -134,18 +147,20 @@ This script combines user discovery and deletion in a single, safe operation.
     -AdminUserId "admin@company.com" `
     -ClientConfigPath "d:\secure\sfclient.sfps" `
     -TempDirectory "d:\temp\" `
+    -UserTypes Employee `
     -Verbose
 ```
 
 ### Parameters
 
-| Parameter          | Required | Default                | Description                                           |
-| ------------------ | -------- | ---------------------- | ----------------------------------------------------- |
-| `AdminUserId`      | Yes      | -                      | User ID or email of admin to receive reassigned items |
-| `ClientConfigPath` | No       | `c:\tmp\sfclient.sfps` | Path to ShareFile client configuration file           |
-| `TempDirectory`    | No       | `C:\tmp\`              | Directory for temporary CSV files                     |
-| `WhatIf`           | No       | -                      | Preview mode - shows actions without executing        |
-| `Verbose`          | No       | -                      | Detailed logging output                               |
+| Parameter          | Required | Default                | Description                                            |
+| ------------------ | -------- | ---------------------- | ------------------------------------------------------ |
+| `AdminUserId`      | Yes      | -                      | User ID or email of admin to receive reassigned items  |
+| `UserTypes`        | No       | `Both`                 | User types to process: `Employee`, `Client`, or `Both` |
+| `ClientConfigPath` | No       | `c:\tmp\sfclient.sfps` | Path to ShareFile client configuration file            |
+| `TempDirectory`    | No       | `C:\tmp\`              | Directory for temporary CSV files                      |
+| `WhatIf`           | No       | -                      | Preview mode - shows actions without executing         |
+| `Verbose`          | No       | -                      | Detailed logging output                                |
 
 ## Scripts Overview
 
@@ -155,7 +170,8 @@ This script combines user discovery and deletion in a single, safe operation.
 
 ✅ **Features:**
 
-- Finds disabled users (employees and clients)
+- Finds disabled users (employees and/or clients)
+- Flexible user type selection (Employee, Client, or Both)
 - Safely deletes users with confirmation prompts
 - Reassigns items and groups to specified admin user
 - Progress tracking and detailed logging
@@ -299,16 +315,27 @@ Set-Location "C:\Scripts\ShareFile"
     -Verbose
 ```
 
-### Example 4: Report Only (Using Legacy Script)
+### Example 4: User Type Targeting
 
 ```powershell
-# Generate report without deletion
-Add-PSSnapin ShareFile
-.\disabledUsers.ps1
+# Process only disabled employee accounts
+.\Remove-DisabledShareFileUsers.ps1 `
+    -AdminUserId "hr.admin@company.com" `
+    -UserTypes Employee `
+    -WhatIf
 
-# Review generated CSV files
-Import-Csv "C:\tmp\employee.csv" | Format-Table
-Import-Csv "C:\tmp\client.csv" | Format-Table
+# Process only disabled client accounts
+.\Remove-DisabledShareFileUsers.ps1 `
+    -AdminUserId "client.admin@company.com" `
+    -UserTypes Client `
+    -Verbose
+
+# Process both types with custom configuration
+.\Remove-DisabledShareFileUsers.ps1 `
+    -AdminUserId "admin@company.com" `
+    -UserTypes Both `
+    -ClientConfigPath "D:\Secure\sfclient.sfps" `
+    -TempDirectory "D:\Temp\"
 ```
 
 ## Security Considerations
